@@ -1,5 +1,5 @@
+//EPCC EV, CKT, JJ
 #include <ros/ros.h>
-
 // ROS libraries
 #include <angles/angles.h>
 #include <random_numbers/random_numbers.h>
@@ -14,6 +14,7 @@
 #include <sensor_msgs/Joy.h>
 #include <sensor_msgs/Range.h>
 #include <geometry_msgs/Pose2D.h>
+#include <geometry_msgs/PoseArray.h> //EPCC James
 #include <geometry_msgs/Twist.h>
 #include <nav_msgs/Odometry.h>
 #include <apriltags_ros/AprilTagDetectionArray.h>
@@ -27,7 +28,6 @@
 // properly in response to "rosnode kill"
 #include <ros/ros.h>
 #include <signal.h>
-
 
 using namespace std;
 
@@ -98,7 +98,50 @@ geometry_msgs::Pose2D mapLocation[mapHistorySize];
 
 bool avoidingObstacle = false;
 
-float searchVelocity = 0.2; // meters/second
+//EPCC EV
+//float searchVelocity = 0.2; // meters/second
+float searchVelocity = 0.6; // changed from 1
+int NUMpublishedNameEPCC=0;
+bool WeAreInPrelimCompetitionEPCC=true; //must start as true!
+int ModeOfSearchEPCC=0; // 0=sectorized (uniform/random scan), 2=power law, 3=clustered
+double pitchEPCC=0;
+double rollEPCC=0;
+bool centerHasBeenReachedEPCC=false;
+bool DROPbyEPCC=false;
+float counterEPCC=0;
+float TropicLimit=2;
+float Boundary=5;
+bool verticalApproachEPCC=true;
+float KeepNestSafeX=1;
+float KeepNestSafeY=2;
+
+//EPCC James
+geometry_msgs::PoseArray localPoseArray;
+/*
+orientation.x is distance between cluster and center
+orientation.y is CURRENT distance of bot to cluster
+orientation.z is number of bots at cluster
+orientation.w is angle of bot searching cluster, used to control
+*/
+bool multipleTargets = false;
+bool drivingToCluster = false;
+bool reachedCluster = false;
+bool searchingCluster = false;
+bool tooClose = false;
+int currentClusterIndex = 0;
+float currentClusterX = 0;
+float currentDistToCenter = 0;
+float currentDistToCluster = 0;
+ros::Publisher clusterPublisher;
+ros::Subscriber clusterSubscriber;
+void clusterHandler(const geometry_msgs::PoseArray& poseArray);
+
+//EPCC CKT
+bool publish = true;
+int numberOfRovers = 0;
+ros::Publisher numPublisher;
+ros::Subscriber numSubscriber;
+void numHandler(const std_msgs::UInt8::ConstPtr& message);
 
 std_msgs::String msg;
 
@@ -143,7 +186,7 @@ ros::Timer publish_heartbeat_timer;
 // records time for delays in sequanced actions, 1 second resolution.
 time_t timerStartTime;
 
-// An initial delay to allow the rover to gather enough position data to 
+// An initial delay to allow the rover to gather enough position data to
 // average its location.
 unsigned int startDelayInSeconds = 1;
 float timerTimeElapsed = 0;
@@ -171,6 +214,7 @@ int main(int argc, char **argv) {
     gethostname(host, sizeof (host));
     string hostname(host);
 
+    /*epcc EV cancelled
     // instantiate random number generator
     rng = new random_numbers::RandomNumberGenerator();
 
@@ -180,7 +224,7 @@ int main(int argc, char **argv) {
     //select initial search position 50 cm from center (0,0)
     goalLocation.x = 0.5 * cos(goalLocation.theta+M_PI);
     goalLocation.y = 0.5 * sin(goalLocation.theta+M_PI);
-
+    */
     centerLocation.x = 0;
     centerLocation.y = 0;
     centerLocationOdom.x = 0;
@@ -214,6 +258,9 @@ int main(int argc, char **argv) {
     obstacleSubscriber = mNH.subscribe((publishedName + "/obstacle"), 10, obstacleHandler);
     odometrySubscriber = mNH.subscribe((publishedName + "/odom/filtered"), 10, odometryHandler);
     mapSubscriber = mNH.subscribe((publishedName + "/odom/ekf"), 10, mapHandler);
+    //EPCC JJ CKT
+    clusterSubscriber = mNH.subscribe("/tagz", 10, clusterHandler);
+    numSubscriber = mNH.subscribe("/numRovers", 10, numHandler);
 
     status_publisher = mNH.advertise<std_msgs::String>((publishedName + "/status"), 1, true);
     stateMachinePublish = mNH.advertise<std_msgs::String>((publishedName + "/state_machine"), 1, true);
@@ -222,12 +269,20 @@ int main(int argc, char **argv) {
     infoLogPublisher = mNH.advertise<std_msgs::String>("/infoLog", 1, true);
     driveControlPublish = mNH.advertise<geometry_msgs::Twist>((publishedName + "/driveControl"), 10);
     heartbeatPublisher = mNH.advertise<std_msgs::String>((publishedName + "/mobility/heartbeat"), 1, true);
+    //EPCC JJ CKT
+    clusterPublisher = mNH.advertise<geometry_msgs::PoseArray>(("/tagz"), 10, true);
+    numPublisher = mNH.advertise<std_msgs::UInt8>(("/numRovers"),10,true);
 
     publish_status_timer = mNH.createTimer(ros::Duration(status_publish_interval), publishStatusTimerEventHandler);
     stateMachineTimer = mNH.createTimer(ros::Duration(mobilityLoopTimeStep), mobilityStateMachine);
     targetDetectedTimer = mNH.createTimer(ros::Duration(0), targetDetectedReset, true);
 
     publish_heartbeat_timer = mNH.createTimer(ros::Duration(heartbeat_publish_interval), publishHeartBeatTimerEventHandler);
+
+    //EPCC CKT publishes a code to make other rovers aware of its existence
+    std_msgs::UInt8 nummsg;
+    nummsg.data = 50;
+    numPublisher.publish(nummsg);
 
     tfListener = new tf::TransformListener();
     std_msgs::String msg;
@@ -246,7 +301,6 @@ int main(int argc, char **argv) {
     return EXIT_SUCCESS;
 }
 
-
 // This is the top-most logic control block organised as a state machine.
 // This function calls the dropOff, pickUp, and search controllers.
 // This block passes the goal location to the proportional-integral-derivative
@@ -264,26 +318,187 @@ void mobilityStateMachine(const ros::TimerEvent&) {
     // Robot is in automode
     if (currentMode == 2 || currentMode == 3) {
 
-
         // time since timerStartTime was set to current time
         timerTimeElapsed = time(0) - timerStartTime;
 
         // init code goes here. (code that runs only once at start of
         // auto mode but wont work in main goes here)
         if (!init) {
+
+            //EPCC/CKT testing to verify that all rovers are aware of how many rovers are active
+            stringstream ss;
+            ss << publishedName + " rovers registered : " << numberOfRovers;
+            msg.data = ss.str();
+            infoLogPublisher.publish(msg);
+
+            //EPCC EV... NUMpublishedName is used to pass the individual behavior to extrenal controllers
+            // WeAreInPrelimCompetitionEPCC=false; // epcc EV ... for the time being because Pedro's publisher is not complet
+            if (publishedName=="achilles"){
+                NUMpublishedNameEPCC=1;
+            }
+            else if (publishedName=="aeneas"){
+                NUMpublishedNameEPCC=2;
+            }
+            else if (publishedName=="ajax"){
+                NUMpublishedNameEPCC=3;
+            }
+            else if (publishedName=="hector"){
+                NUMpublishedNameEPCC=4;
+                // we need to publish this
+
+                //WeAreInPrelimCompetitionEPCC=false;
+            }
+            else if (publishedName=="paris"){
+                NUMpublishedNameEPCC=5;
+                // we need to publish this
+               // WeAreInPrelimCompetitionEPCC=false;
+            }
+            else if (publishedName=="diomedes"){
+                NUMpublishedNameEPCC=6;
+                // we need to publish this
+                //WeAreInPrelimCompetitionEPCC=true;
+            }
+
             if (timerTimeElapsed > startDelayInSeconds) {
+
+                //EPCC EV 03/15/17 asigned initial radial heading to avoid early collisions & capsizing
+                if (WeAreInPrelimCompetitionEPCC){
+                    if (publishedName=="achilles"){
+
+                        currentLocation.x= -1.3;
+                        currentLocation.y= 0.0;
+
+                        goalLocation.x= -4.0;
+                        goalLocation.y= 0.0;
+
+                        goalLocation.theta= 0;//M_PI;
+                    }
+                    else if (publishedName=="aeneas"){
+                        currentLocation.x= 0;
+                        currentLocation.y= -1.0;
+
+                        goalLocation.x= 0;
+                        goalLocation.y= -4.0;
+
+                        goalLocation.theta= -M_PI*0.35;
+                    }
+                    else if (publishedName=="ajax"){
+                        currentLocation.x= 1.3;
+                        currentLocation.y= 0.0;
+
+                        goalLocation.x= 4.0;
+
+                        //EPCC EV... anomaly with ajax for turning to zero radians
+                        //... we have tried all the variations (shown below) but it does not respond.
+                        //... we think it is related to the map. This is a quesiton worth asking UNM.
+                        goalLocation.y= 4.0;
+
+                        goalLocation.theta= M_PI*0.5;
+                    }
+                }
+                else if (!WeAreInPrelimCompetitionEPCC){ // epcc EV ... that is, we are in finals
+                    if (publishedName=="achilles"){
+
+                        currentLocation.x= -1.3;
+                        currentLocation.y= 0;
+
+                        goalLocation.x= -4.0;
+                        goalLocation.y= -0.1;
+                    }
+                    else if (publishedName=="aeneas"){
+                        currentLocation.x= 0;
+                        currentLocation.y= -1.3;
+
+                        goalLocation.x= 4.0;
+                        goalLocation.y= -4.0;
+                        goalLocation.theta=-M_PI*0.25;
+                    }
+                    else if (publishedName=="ajax"){
+                        currentLocation.x= 1.3;
+                        currentLocation.y= 0.0;
+
+                        goalLocation.x= 4.0;
+
+                        //EPCC EV... anomaly with ajax for turning to zero radians
+                        //... we have tried all the variations (shown below) but it does not respond.
+                        //... we think it is related to the map. This is a quesiton worth asking UNM.
+                        goalLocation.y= 0.1;
+                    }
+                    else if (publishedName=="hector"){
+                        currentLocation.x=  1.06;
+                        currentLocation.y= 1.06;
+
+                        goalLocation.x= 4.0;
+                        goalLocation.y= 4.0;
+                    }
+                    else if (publishedName=="paris"){
+                        currentLocation.x= -1.06;
+                        currentLocation.y= -1.06;
+
+                        goalLocation.x= -4.0;
+                        goalLocation.y= -4.0;
+                    }
+                    else if (publishedName=="diomedes"){
+                        currentLocation.x= 0.0;
+                        currentLocation.y=  1.3;
+
+                        goalLocation.x= -4.0;
+                        goalLocation.y= 4.0;
+                    }
+
+                    //EPCC EV we need to assure correct quadrant of goal location ANGLE
+
+                    if (goalLocation.x >= currentLocation.x){
+                        if (goalLocation.y >= currentLocation.y) {
+                            //EPCC EV new theta is in the 1st quadrant
+                            goalLocation.theta = atan2( abs(goalLocation.y - currentLocation.y), abs(goalLocation.x - currentLocation.x) );
+                        }
+                        else if (goalLocation.y < currentLocation.y){
+                            //EPCC EV new theta is in the 4th quadrant
+                            goalLocation.theta = -atan2( abs(goalLocation.y - currentLocation.y), abs(goalLocation.x - currentLocation.x) );
+                        }
+                    }else if (goalLocation.x < currentLocation.x){
+                        if (goalLocation.y > currentLocation.y) {
+                            //EPCC EV new theta is in the 2dn quadrant
+                            goalLocation.theta = M_PI - atan2( abs(goalLocation.y - currentLocation.y), abs(goalLocation.x - currentLocation.x) );
+                        }
+                        else if (goalLocation.y < currentLocation.y){
+                            //EPCC EV new theta is in the 3rd quadrant
+                            goalLocation.theta = atan2( abs(goalLocation.y - currentLocation.y), abs(goalLocation.x - currentLocation.x) ) - M_PI;
+                        }
+                    }
+                }
+
+                // epcc EV ... the lines below where added because we want to start the correct known location
+                //not in the average provided by the GPS
+                currentLocationAverage.x = currentLocation.x;
+                currentLocationAverage.y = currentLocation.y;
+
                 // Set the location of the center circle location in the map
                 // frame based upon our current average location on the map.
                 centerLocationMap.x = currentLocationAverage.x;
                 centerLocationMap.y = currentLocationAverage.y;
                 centerLocationMap.theta = currentLocationAverage.theta;
+                /////////////////////////////////////////////
+                counterEPCC=0;
+                while (counterEPCC<0){
+                    counterEPCC=counterEPCC+0.0000001;
+                }
 
+
+          //make sure we copy this statement from the search controller Lines 50-56.
+    if (WeAreInPrelimCompetitionEPCC){
+        Boundary=7.5;
+        TropicLimit=3;
+    }else{
+        Boundary=11.55;
+        TropicLimit=4;
+    }
                 // initialization has run
                 init = true;
             } else {
                 return;
             }
-
         }
 
         // If no collected or detected blocks set fingers
@@ -293,10 +508,11 @@ void mobilityStateMachine(const ros::TimerEvent&) {
             std_msgs::Float32 angle;
 
             // open fingers
-            angle.data = M_PI_2;
+            angle.data = M_PI_2*0.9;
 
             fingerAnglePublish.publish(angle);
-            angle.data = 0;
+            //returned to 0.0; to prevent kicking cubes out from the nest.
+            angle.data = 0.0; // epcc EV ... original value was 0. We lowered the wrist to catch cubes at high speed
 
             // raise wrist
             wristAnglePublish.publish(angle);
@@ -309,25 +525,151 @@ void mobilityStateMachine(const ros::TimerEvent&) {
         case STATE_MACHINE_TRANSFORM: {
             stateMachineMsg.data = "TRANSFORMING";
 
+            if ( (abs(currentLocation.x)<KeepNestSafeX && abs(currentLocation.y<KeepNestSafeY)) &&(!targetCollected) ){
+                goalLocation=currentLocation;
+
+                //currentLocation.theta=currentLocation.theta+M_PI;
+                counterEPCC=0;
+                sendDriveCommand(0.001,1);
+
+                while (counterEPCC<1){ // the goal is to walk for a meeter or more
+                    counterEPCC=counterEPCC+0.00001;
+                }
+                counterEPCC=0;
+                sendDriveCommand(1,0);
+
+                while (counterEPCC<1){ // the goal is to walk for a meeter or more
+                    counterEPCC=counterEPCC+0.0000001;
+                }
+
+                goalLocation=currentLocation;
+
+                goalLocation = searchController.search(currentLocation, NUMpublishedNameEPCC, WeAreInPrelimCompetitionEPCC,ModeOfSearchEPCC);
+                std_msgs::String msg;
+                msg.data = "NEAR CENTER bouncing at 60 degrees to avoid center Mobility LINE 512";
+                infoLogPublisher.publish(msg);
+                stateMachineState=STATE_MACHINE_TRANSFORM;
+                break;
+            }
+
             // If returning with a target
-            if (targetCollected && !avoidingObstacle) {
+            if ( (targetCollected && !avoidingObstacle) ) {
                 // calculate the euclidean distance between
                 // centerLocation and currentLocation
                 dropOffController.setCenterDist(hypot(centerLocation.x - currentLocation.x, centerLocation.y - currentLocation.y));
+                dropOffController.setCenterDist(hypot(0 - currentLocation.x, 0 - currentLocation.y));
+
                 dropOffController.setDataLocations(centerLocation, currentLocation, timerTimeElapsed);
+                dropOffController.setDataLocations(centerLocation, currentLocation, timerTimeElapsed);
+
+                //EPCC EV... starting dropoff Funnel to assure arrival to a face
+                //goalLocation.x=0; // ... we want to center in x
+
+                /*
+                if (abs(currentLocation.x)>0){
+                    if (abs(currentLocation.y>0.001)) {
+                        goalLocation.y=currentLocation.y;
+                    }
+                    //... we are assigning correct theta to achieve center in x
+                    if (currentLocation.x <0) {
+                        goalLocation.theta=0;
+                    }
+                    else if (currentLocation.x >0){
+                        goalLocation.theta=M_PI;
+                    }
+                }
+                */
+
+                   // msg.data = "reachedCollectionPoint = true; Mobility LINE 348";
+                   // infoLogPublisher.publish(msg);
+
+                    /*
+                    if (verticalApproachEPCC){
+                        goalLocation.x=0;
+                        if (currentLocation.y>0){
+                            goalLocation.y=-1;
+                            goalLocation.theta = -atan2(abs(currentLocation.y), abs(currentLocation.x) );
+                        }
+                        else if (currentLocation.y <=0) {
+                            goalLocation.y=1;
+                            goalLocation.theta =  atan2( abs(currentLocation.y), abs(currentLocation.x) );
+                        }
+                    }
+                    else if (!verticalApproachEPCC) { // horizontal approach
+                        goalLocation.y=0;
+                        if (currentLocation.x >0) {
+                            goalLocation.x=-1;
+                            //EPCC EV we are in the 2nd quadrant
+                            goalLocation.theta = atan2( abs(currentLocation.y), abs(currentLocation.x) ) ;
+                        }
+                        else if ( currentLocation.y <=0) {
+                            goalLocation.x=-1;
+                            //EPCC EV we are in the 3rd quadrant
+                            goalLocation.theta = -atan2( abs(currentLocation.y), abs(currentLocation.x)) ;
+                        }
+                    }
+                */
 
                 DropOffResult result = dropOffController.getState();
 
                 if (result.timer) {
                     timerStartTime = time(0);
                     reachedCollectionPoint = true;
+
+                    msg.data = "reachedCollectionPoint = true; Mobility LINE 348";
+                    infoLogPublisher.publish(msg);
+                }
+
+                //EPCC EV... preventing getting trapped in the center (1st modification to vanilla)
+                if (abs(currentLocation.x)<0.2 && abs(currentLocation.y<0.9) ){
+                    goalLocation=currentLocation;
+                    sendDriveCommand(-1.0,0);
+                    std_msgs::String msg;
+                    msg.data = "EPCC ...if we are allowed to enter the center reverse wherever gps says we are about to CROSS it; Mobility LINE 359";
+                    infoLogPublisher.publish(msg);
+
+                    //a while loop could be placed here
+
+                    sendDriveCommand(-1.0,0) ;
                 }
 
                 std_msgs::Float32 angle;
 
                 if (result.fingerAngle != -1) {
+
                     angle.data = result.fingerAngle;
                     fingerAnglePublish.publish(angle);
+
+                    //EPCC EV... preventing getting trapped in the center (1st modification to vanilla)
+                    goalLocation=currentLocation;
+                    sendDriveCommand(-1.0,0);
+
+                    //EPCC open fingers manually
+                    //std_msgs::Float32 angle;
+                    //angle.data = M_PI_2*1;
+                    //fingerAnglePublish.publish(angle);
+                    std_msgs::String msg;
+
+
+                    //std_msgs::String msg;
+                    msg.data = "epcc... reverse after opening fingers... Mobility LINE 382";
+                    infoLogPublisher.publish(msg);
+                    searchVelocity=-1; //??
+                    while (counterEPCC<0.9){
+                        counterEPCC=counterEPCC+0.0000001;
+
+                        msg.data = "pcc... while cycle to assure reverse without timer... Mobility LINE 388";
+                        //infoLogPublisher.publish(msg);
+                    }
+                    goalLocation=currentLocation;
+                    sendDriveCommand(0,0);
+                    //goalLocation = searchController.search(currentLocation);
+                    goalLocation = searchController.search(currentLocation, NUMpublishedNameEPCC, WeAreInPrelimCompetitionEPCC,ModeOfSearchEPCC);
+
+                    //std_msgs::String msg;
+                    msg.data = "epcc... searchController has been invoqued... Mobility LINE 502";
+                    infoLogPublisher.publish(msg);
+                    DROPbyEPCC=false;
                 }
 
                 if (result.wristAngle != -1) {
@@ -336,6 +678,14 @@ void mobilityStateMachine(const ros::TimerEvent&) {
                 }
 
                 if (result.reset) {
+
+                    //EPCC James reset our variables (redundancy)
+                    msg.data = publishedName + " has dropped off a cube!";
+                    infoLogPublisher.publish(msg);
+                    drivingToCluster = false;
+                    reachedCluster = false;
+                    searchingCluster = false;
+
                     timerStartTime = time(0);
                     targetCollected = false;
                     targetDetected = false;
@@ -356,11 +706,13 @@ void mobilityStateMachine(const ros::TimerEvent&) {
                 // we are in precision/timed driving
                 else {
                     goalLocation = currentLocation;
+                    //sendDriveCommand(result.cmdVel,result.angleError);
                     sendDriveCommand(result.cmdVel,result.angleError);
                     stateMachineState = STATE_MACHINE_TRANSFORM;
 
                     break;
                 }
+
             }
             //If angle between current and goal is significant
             //if error in heading is greater than 0.4 radians
@@ -374,9 +726,79 @@ void mobilityStateMachine(const ros::TimerEvent&) {
             //Otherwise, drop off target and select new random uniform heading
             //If no targets have been detected, assign a new goal
             else if (!targetDetected && timerTimeElapsed > returnToSearchDelay) {
-                goalLocation = searchController.search(currentLocation);
+                //EPCC James this part decides where to go.
+                //if there is an unoccupied cluster, go. else, random search within section
+                if(localPoseArray.poses.size() != 0){
+                    //if we think we're here
+                    if(reachedCluster){
+                        //this loop is to have a lower chance of accessing the wrong index
+                        //like when another bot deletes from their array
+                        currentClusterIndex = 0;
+                        for(int i = 0; i<localPoseArray.poses.size(); i++){
+                            if(currentClusterX == localPoseArray.poses[i].position.x){
+                                currentClusterIndex = i;
+                            }
+                        }
+                        //keep adding to .theta and passing to rotate state until threshold
+                        if(localPoseArray.poses[currentClusterIndex].orientation.w < 25){
+                            msg.data = publishedName + " is spin-searching for a nearby cluster!";
+                            infoLogPublisher.publish(msg);
+                            goalLocation.x = localPoseArray.poses[currentClusterIndex].position.x;
+                            goalLocation.y = localPoseArray.poses[currentClusterIndex].position.y;
+                            goalLocation.theta = localPoseArray.poses[currentClusterIndex].orientation.w + 45*(M_PI/180);
+                            localPoseArray.poses[currentClusterIndex].orientation.w = goalLocation.theta;
+                            clusterPublisher.publish(localPoseArray);
+                            drivingToCluster = false;
+                            searchingCluster = true;
+                        }
+                        else{ //threshold reached, assume area empty, cleanse memory
+                            msg.data = publishedName + " couldn't find any cubes!";
+                            infoLogPublisher.publish(msg);
+                            localPoseArray.poses.erase(localPoseArray.poses.begin()+currentClusterIndex);
+                            clusterPublisher.publish(localPoseArray);
+                            drivingToCluster = false;
+                            reachedCluster = false;
+                            searchingCluster = false;
+                            stateMachineState = STATE_MACHINE_TRANSFORM;
+                            return;
+                        }
+                    }
+                    else{ //shall we go though?
+                        msg.data = publishedName + " is setting destination to cluster!";
+                        infoLogPublisher.publish(msg);
+                        currentClusterIndex = -1;
+                        for(int i = 0; i<localPoseArray.poses.size(); i++){
+                            //1bot/1cluster at any given time (hopefully), under 7 units away
+                            if(localPoseArray.poses[i].orientation.z == 0 && hypot(abs(localPoseArray.poses[i].position.x - currentLocation.x), abs(localPoseArray.poses[i].position.y - currentLocation.y)) < 7){
+                                localPoseArray.poses[i].orientation.z = 1;
+                                currentClusterIndex = i;
+                                break; //exit at first match
+                            }
+                        } //no valid cluster
+                        if(currentClusterIndex == -1){
+                            msg.data = publishedName + " no valid cluster, randumb search!";
+                            infoLogPublisher.publish(msg);
+                            goalLocation = searchController.search(currentLocation, NUMpublishedNameEPCC, WeAreInPrelimCompetitionEPCC,ModeOfSearchEPCC);
+                            drivingToCluster = false;
+                        }
+                        else{ //here we go! update cCX
+                            goalLocation.x = currentClusterX = localPoseArray.poses[currentClusterIndex].position.x;
+                            goalLocation.y = localPoseArray.poses[currentClusterIndex].position.y;
+                            goalLocation.theta = localPoseArray.poses[currentClusterIndex].position.z;
+                            drivingToCluster = true;
+                        }
+                    }
+                }
+                else{
+                    //EPCC EV... our version of the search controller
+                    msg.data = publishedName + " - searchController has been invoqued... Mobility LINE 502";
+                    infoLogPublisher.publish(msg);
+                    goalLocation = searchController.search(currentLocation, NUMpublishedNameEPCC, WeAreInPrelimCompetitionEPCC,ModeOfSearchEPCC);
+                    drivingToCluster = false;
+                    reachedCluster = false;
+                    searchingCluster = false;
+                }
             }
-
             //Purposefully fall through to next case without breaking
         }
 
@@ -421,6 +843,16 @@ void mobilityStateMachine(const ros::TimerEvent&) {
                 sendDriveCommand(0.0, errorYaw);
             }
             else {
+                //EPCC James this is how we assume the rover has reached a cluster, rare bug with bot in perfect center
+                if(drivingToCluster && !avoidingObstacle && !targetCollected && !centerSeen){
+                    msg.data = publishedName + " has arrived at a cluster!";
+                    infoLogPublisher.publish(msg);
+                    reachedCluster = true;
+                }
+                else{
+                    //msg.data = publishedName + " is stopping!";
+                    //infoLogPublisher.publish(msg);
+                }
                 // stop
                 sendDriveCommand(0.0, 0.0);
                 avoidingObstacle = false;
@@ -428,11 +860,33 @@ void mobilityStateMachine(const ros::TimerEvent&) {
                 // move back to transform step
                 stateMachineState = STATE_MACHINE_TRANSFORM;
             }
-
             break;
         }
 
         case STATE_MACHINE_PICKUP: {
+
+            if ( (abs(currentLocation.x)<KeepNestSafeX && abs(currentLocation.y<KeepNestSafeY)) &&(!targetCollected) ){
+
+                goalLocation=currentLocation;
+                sendDriveCommand(0,0);
+                //bouncing code
+
+                currentLocation.theta=currentLocation.theta+M_PI*0.7;
+                sendDriveCommand(1,0);
+                counterEPCC=0;
+                while (counterEPCC<1){ // the goal is to walk for a meeter or more
+                    counterEPCC=counterEPCC+0.0000001;
+                }
+                sendDriveCommand(0,0);
+
+                goalLocation = searchController.search(currentLocation, NUMpublishedNameEPCC, WeAreInPrelimCompetitionEPCC,ModeOfSearchEPCC);
+                std_msgs::String msg;
+                msg.data = "PICKUP TRIGGERED BUT bouncing at 60 degrees to avoid center Mobility LINE 758";
+                infoLogPublisher.publish(msg);
+                stateMachineState=STATE_MACHINE_TRANSFORM;
+                break;
+            }
+            else{
             stateMachineMsg.data = "PICKUP";
 
             PickUpResult result;
@@ -456,6 +910,7 @@ void mobilityStateMachine(const ros::TimerEvent&) {
                 }
 
                 if (result.giveUp) {
+                    multipleTargets = false; //EPCC James
                     targetDetected = false;
                     stateMachineState = STATE_MACHINE_TRANSFORM;
                     sendDriveCommand(0,0);
@@ -463,18 +918,110 @@ void mobilityStateMachine(const ros::TimerEvent&) {
                 }
 
                 if (result.pickedUp) {
+
+                    //EPCC James if collected a cube from cluster, no longer say you're there
+                    if(drivingToCluster || searchingCluster){
+                        currentClusterIndex = -1;
+                        for(int i = 0; i<localPoseArray.poses.size(); i++){
+                            if(currentClusterX == localPoseArray.poses[i].position.x){
+                                currentClusterIndex = i;
+                            }
+                        }
+                        if(!currentClusterIndex == -1)
+                            localPoseArray.poses[currentClusterIndex].orientation.z = 0;
+                        currentClusterIndex = 0;
+                    }
+
+                    //EPCC James publishes updated array after pickup from a cluster
+                    if(multipleTargets && !searchingCluster){
+                        multipleTargets = false; // set to false to avoid spam
+                        tooClose = false;
+                        currentDistToCenter = hypot(abs(centerLocation.x - currentLocation.x), abs(centerLocation.y - currentLocation.y));
+                        // to avoid publishing a pose that is not unique
+                        if(currentDistToCenter > 1.5){
+                            if(localPoseArray.poses.size() != 0){
+                                for(int i = 0; i<localPoseArray.poses.size(); i++){
+                                    if(hypot(abs(localPoseArray.poses[i].position.x - currentLocation.x), abs(localPoseArray.poses[i].position.y - currentLocation.y)) < 1.5)
+                                        tooClose = true;
+                                }
+                            }
+                        }
+                        else tooClose = true;
+
+                        if(!tooClose){
+                            msg.data = publishedName + " is publishing a globalPoseArray!";
+                            infoLogPublisher.publish(msg);
+                            geometry_msgs::Pose p;
+                            p.position.x = currentLocation.x;
+                            p.position.y = currentLocation.y;
+                            p.position.z = currentLocation.theta;
+                            p.orientation.x = currentDistToCenter;
+                            p.orientation.w = p.position.z;
+                            localPoseArray.poses.push_back(p);
+                            clusterPublisher.publish(localPoseArray);
+                            reachedCluster = false; //we're driving back to base
+                        }
+                    }
+
                     pickUpController.reset();
 
                     // assume target has been picked up by gripper
                     targetCollected = true;
-                    result.pickedUp = false;
-                    stateMachineState = STATE_MACHINE_ROTATE;
+                    result.pickedUp = false; //
+                     stateMachineState = STATE_MACHINE_ROTATE;
 
-                    goalLocation.theta = atan2(centerLocationOdom.y - currentLocation.y, centerLocationOdom.x - currentLocation.x);
+                    DROPbyEPCC=true;
+
+                    if ( abs(currentLocation.y)>TropicLimit){
+                        goalLocation.x=0;// ... we want to center in X
+                        verticalApproachEPCC=true;
+                        if (currentLocation.x <=0) {
+                            goalLocation.theta=0;
+                        }
+                        else if (currentLocation.x >0){
+                            goalLocation.theta=M_PI;
+                        }
+                    }else if( abs(currentLocation.y) <= TropicLimit)  {
+                        goalLocation.y=0;// ... we want to center in Y
+                        verticalApproachEPCC=false;
+                        if (currentLocation.y <=0) {
+                            goalLocation.theta= M_PI*0.5;
+                        }
+                        else if (currentLocation.y >0){
+                            goalLocation.theta= -M_PI*0.5;
+                        }
+                    }
+
+               /*     else if (abs(currentLocation.x)<=0.1){ //centering in x has been accomplished
+                        goalLocation.y=0;
+                        if (0<= currentLocation.x) {
+                            if (0 < currentLocation.y) {
+                                //EPCC EV we are in the 1st quadrant
+                                goalLocation.theta = -M_PI + atan2(currentLocation.y, currentLocation.x);
+                            }
+                            else if (currentLocation.y <=0) {
+                                //EPCC EV we are in the 4th quadrant
+                                goalLocation.theta =  - atan2( abs(currentLocation.y), currentLocation.x);
+                            }
+                        }
+                        else if ( currentLocation.x <=0 ) {
+                            if (0 < currentLocation.y) {
+                                //EPCC EV we are in the 2nd quadrant
+                                goalLocation.theta = - atan2(currentLocation.y, abs(currentLocation.x)) ;
+                            }
+                            else if ( currentLocation.y <=0) {
+                                //EPCC EV we are in the 3rd quadrant
+                                goalLocation.theta = atan2( abs(currentLocation.y), abs(currentLocation.x)) ;
+                            }
+                        }
+                    }
+                    */
+
+                    //EPCC FUNNEL                    goalLocation.theta = atan2(centerLocationOdom.y - currentLocation.y, centerLocationOdom.x - currentLocation.x);
 
                     // set center as goal position
-                    goalLocation.x = centerLocationOdom.x = 0;
-                    goalLocation.y = centerLocationOdom.y;
+                    //EPCC FUNNEL                    goalLocation.x = centerLocationOdom.x = 0;
+                    //EPCC FUNNEL                    goalLocation.y = centerLocationOdom.y;
 
                     // lower wrist to avoid ultrasound sensors
                     std_msgs::Float32 angle;
@@ -484,10 +1031,11 @@ void mobilityStateMachine(const ros::TimerEvent&) {
 
                     return;
                 }
+
             } else {
                 stateMachineState = STATE_MACHINE_TRANSFORM;
             }
-
+        }
             break;
         }
 
@@ -527,6 +1075,25 @@ void sendDriveCommand(double linearVel, double angularError)
 /*************************
  * ROS CALLBACK HANDLERS *
  *************************/
+
+ //EPCC James decides whether or not to update
+ void clusterHandler(const geometry_msgs::PoseArray& globalPoseArray){
+     // if a location has been added or deleted, update
+     if(localPoseArray.poses.size() != globalPoseArray.poses.size()){
+         localPoseArray = globalPoseArray;
+         msg.data = publishedName + " is updating localPoseArray!";
+         infoLogPublisher.publish(msg);
+     }
+ }
+
+ //EPCC/CKT used for counting the number of active rovers
+ //every time a rover publishes to this topic the number of rovers is incremented;
+ void numHandler(const std_msgs::UInt8::ConstPtr& message){
+     numberOfRovers++;
+     if(numberOfRovers > 3)
+         WeAreInPrelimCompetitionEPCC = false;
+     //publish = true;
+ }
 
 void targetHandler(const apriltags_ros::AprilTagDetectionArray::ConstPtr& message) {
 
@@ -602,6 +1169,13 @@ void targetHandler(const apriltags_ros::AprilTagDetectionArray::ConstPtr& messag
 
     if (message->detections.size() > 0 && !targetCollected && timerTimeElapsed > 5) {
         targetDetected = true;
+
+        //EPCC James this marks location for publish on next mobility call
+        if(message->detections.size() > 3 && !multipleTargets && !searchingCluster && !reachedCluster){
+          multipleTargets = true;
+          msg.data = publishedName + " found multiple cubes!";
+          infoLogPublisher.publish(msg);
+        }
 
         // pickup state so target handler can take over driving.
         stateMachineState = STATE_MACHINE_PICKUP;
@@ -738,7 +1312,7 @@ void mapAverage() {
     // find the average
     x = x/mapHistorySize;
     y = y/mapHistorySize;
-    
+
     // Get theta rotation by converting quaternion orientation to pitch/roll/yaw
     theta = theta/100;
     currentLocationAverage.x = x;
@@ -779,6 +1353,7 @@ void mapAverage() {
         // Use the position and orientation provided by the ros transform.
         centerLocation.x = odomPose.pose.position.x; //set centerLocation in odom frame
         centerLocation.y = odomPose.pose.position.y;
+
 
 
     }
