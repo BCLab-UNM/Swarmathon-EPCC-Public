@@ -57,7 +57,7 @@ PickUpResult PickUpController::pickUpSelectedTarget(bool blockBlock) {
     }
     else if (blockDist > targetDist && !lockTarget) //if a target is detected but not locked, and not too close.
     {
-        float vel = blockDist * 0.20;
+        float vel = blockDist * 0.40;
         if (vel < 0.1) vel = 0.1;
         if (vel > 0.2) vel = 0.2;
         result.cmdVel = vel;
@@ -81,7 +81,7 @@ PickUpResult PickUpController::pickUpSelectedTarget(bool blockBlock) {
     }
     else if (Td > 1.7) //close the fingers and stop driving
     {
-        result.cmdVel = -0.1;
+        result.cmdVel = 0.05;
         result.angleError = 0.0;
         result.fingerAngle = 0;
         return result;
