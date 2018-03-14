@@ -1,8 +1,0 @@
-prefix=/home/timeinvestor2/SwarmBaseCode-ROS/devel/.private/abridge
-
-Name: abridge
-Description: Description of abridge
-Version: 0.2.0
-Cflags: 
-Libs: -L/home/timeinvestor2/SwarmBaseCode-ROS/devel/.private/abridge/lib 
-Requires: geometry_msgs roscpp sensor_msgs std_msgs tf nav_msgs

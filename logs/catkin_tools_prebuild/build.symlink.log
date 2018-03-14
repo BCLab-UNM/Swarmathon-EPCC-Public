@@ -1,8 +1,0 @@
-Symlinking /home/timeinvestor2/SwarmBaseCode-ROS/devel/./env.sh
-Symlinking /home/timeinvestor2/SwarmBaseCode-ROS/devel/./setup.bash
-Symlinking /home/timeinvestor2/SwarmBaseCode-ROS/devel/./_setup_util.py
-Symlinking /home/timeinvestor2/SwarmBaseCode-ROS/devel/./setup.zsh
-Symlinking /home/timeinvestor2/SwarmBaseCode-ROS/devel/./setup.sh
-Symlinking /home/timeinvestor2/SwarmBaseCode-ROS/devel/share/catkin_tools_prebuild/cmake/catkin_tools_prebuildConfig.cmake
-Symlinking /home/timeinvestor2/SwarmBaseCode-ROS/devel/share/catkin_tools_prebuild/cmake/catkin_tools_prebuildConfig-version.cmake
-Symlinking /home/timeinvestor2/SwarmBaseCode-ROS/devel/lib/pkgconfig/catkin_tools_prebuild.pc

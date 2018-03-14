@@ -1,6 +1,0 @@
-devel_space: /home/timeinvestor2/SwarmBaseCode-ROS/devel
-install: false
-install_space: /home/timeinvestor2/SwarmBaseCode-ROS/install
-profile: default
-source_space: /home/timeinvestor2/SwarmBaseCode-ROS/src
-workspace: /home/timeinvestor2/SwarmBaseCode-ROS

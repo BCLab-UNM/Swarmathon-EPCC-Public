@@ -1,1 +1,0 @@
-/home/timeinvestor2/SwarmBaseCode-ROS/devel/.private/apriltags_ros/lib/python2.7/dist-packages/apriltags_ros/msg/__init__.py

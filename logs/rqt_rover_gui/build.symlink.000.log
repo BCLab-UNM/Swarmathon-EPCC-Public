@@ -1,5 +1,0 @@
-Symlinking /home/timeinvestor2/SwarmBaseCode-ROS/devel/share/rqt_rover_gui/cmake/rqt_rover_guiConfig.cmake
-Symlinking /home/timeinvestor2/SwarmBaseCode-ROS/devel/share/rqt_rover_gui/cmake/rqt_rover_guiConfig-version.cmake
-Symlinking /home/timeinvestor2/SwarmBaseCode-ROS/devel/lib/librqt_rover_gui.so
-Symlinking /home/timeinvestor2/SwarmBaseCode-ROS/devel/lib/pkgconfig/rqt_rover_gui.pc
-Symlinking /home/timeinvestor2/SwarmBaseCode-ROS/devel/lib/python2.7/dist-packages/rqt_rover_gui/__init__.py

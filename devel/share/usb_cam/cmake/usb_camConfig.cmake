@@ -1,1 +1,0 @@
-/home/timeinvestor2/SwarmBaseCode-ROS/devel/.private/usb_cam/share/usb_cam/cmake/usb_camConfig.cmake

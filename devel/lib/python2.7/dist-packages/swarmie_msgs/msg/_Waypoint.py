@@ -1,1 +1,0 @@
-/home/timeinvestor2/SwarmBaseCode-ROS/devel/.private/swarmie_msgs/lib/python2.7/dist-packages/swarmie_msgs/msg/_Waypoint.py

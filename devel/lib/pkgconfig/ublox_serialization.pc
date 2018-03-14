@@ -1,1 +1,0 @@
-/home/timeinvestor2/SwarmBaseCode-ROS/devel/.private/ublox_serialization/lib/pkgconfig/ublox_serialization.pc
