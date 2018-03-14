@@ -91,6 +91,20 @@ geometry_msgs::Pose2D centerLocationMap;	//A GPS point of the center location, u
 geometry_msgs::Pose2D centerLocationOdom;	//The centers location based on ODOM
 geometry_msgs::Pose2D centerLocationMapRef;	//Variable used in TransformMapCenterToOdom, can be moved to make it local instead of global
 
+// EPCC required variables
+int NUMpublishedNameEPCC=0;
+int numberOfRovers = 0;
+bool publish = true;
+bool WeAreInPrelimCompetitionEPCC=true;
+void numHandler(const std_msgs::UInt8::ConstPtr& message);
+ros::Publisher numPublisher;
+ros::Subscriber numSubscriber;
+
+//std_msgs::String msg;
+// EPCC -----
+
+
+
 int currentMode = 0;
 const float behaviourLoopTimeStep = 0.1; 	//time between the behaviour loop calls
 const float status_publish_interval = 1;	//time between publishes
@@ -113,6 +127,7 @@ float drift_tolerance = 0.5; // the perceived difference between ODOM and GPS va
 
 Result result;		//result struct for passing and storing values to drive robot
 
+// epcc un-cancellation     
 std_msgs::String msg;	//used for passing messages to the GUI
 
 
@@ -180,6 +195,8 @@ void sonarHandler(const sensor_msgs::Range::ConstPtr& sonarLeft, const sensor_ms
 long int getROSTimeInMilliSecs();
 
 int main(int argc, char **argv) {
+  // EPCC declaration of ss
+  //stringstream ss;
   
   gethostname(host, sizeof (host));
   string hostname(host);
@@ -247,6 +264,7 @@ int main(int argc, char **argv) {
   {
     // ensure the logic controller starts in the correct mode.
     logicController.SetModeManual();
+    // EPCC // it seems init at the begining of the code will go here
   }
 
   timerStartTime = time(0);
@@ -272,6 +290,37 @@ void behaviourStateMachine(const ros::TimerEvent&)
   // init code goes here. (code that runs only once at start of
   // auto mode but wont work in main goes here)
   if (!initilized)
+   
+
+    //EPCC/CKT testing to verify that all rovers are aware of how many rovers are active
+    
+    //  ss << publishedName + " rovers registered : " << numberOfRovers;
+    msg.data = numberOfRovers;
+    infoLogPublisher.publish(msg);
+
+    //epcc ... NUMpublishedName is used to pass the individual behavior to extrenal controllers
+    if (publishedName=="achilles"){
+      NUMpublishedNameEPCC=1;
+    }
+    else if (publishedName=="aeneas"){
+      NUMpublishedNameEPCC=2;
+    }
+    else if (publishedName=="ajax"){
+      NUMpublishedNameEPCC=3;
+    }
+  
+    else if (publishedName=="hector"){
+      NUMpublishedNameEPCC=4;
+    }
+    else if (publishedName=="paris"){
+      NUMpublishedNameEPCC=5;
+    }
+    else if (publishedName=="diomedes"){
+      NUMpublishedNameEPCC=6;
+    }
+
+
+    //
   {
 
     if (timerTimeElapsed > startDelayInSeconds)
@@ -432,6 +481,15 @@ void sendDriveCommand(double left, double right)
 /*************************
  * ROS CALLBACK HANDLERS *
  *************************/
+
+//EPCC/CKT used for counting the number of active rovers
+//every time a rover publishes to this topic the number of rovers is incremented;
+void numHandler(const std_msgs::UInt8::ConstPtr& message){
+    numberOfRovers++;
+    if(numberOfRovers > 3)
+        WeAreInPrelimCompetitionEPCC = false;
+    //publish = true;
+}
 
 void targetHandler(const apriltags_ros::AprilTagDetectionArray::ConstPtr& message) {
 
@@ -611,7 +669,7 @@ void joyCmdHandler(const sensor_msgs::Joy::ConstPtr& message) {
 
 void publishStatusTimerEventHandler(const ros::TimerEvent&) {
   std_msgs::String msg;
-  msg.data = "online";		//change this with team name
+  msg.data = "Team EL PASO";		//change this with team name
   status_publisher.publish(msg);
 }
 
