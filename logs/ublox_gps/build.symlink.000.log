@@ -1,0 +1,5 @@
+Symlinking /home/timeinvestor2/SwarmBaseCode-ROS/devel/share/ublox_gps/cmake/ublox_gpsConfig-version.cmake
+Symlinking /home/timeinvestor2/SwarmBaseCode-ROS/devel/share/ublox_gps/cmake/ublox_gpsConfig.cmake
+Symlinking /home/timeinvestor2/SwarmBaseCode-ROS/devel/lib/libublox_gps.so
+Symlinking /home/timeinvestor2/SwarmBaseCode-ROS/devel/lib/pkgconfig/ublox_gps.pc
+Symlinking /home/timeinvestor2/SwarmBaseCode-ROS/devel/lib/ublox_gps/ublox_gps

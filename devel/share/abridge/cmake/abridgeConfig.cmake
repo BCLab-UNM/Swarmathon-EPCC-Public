@@ -1,0 +1,1 @@
+/home/timeinvestor2/SwarmBaseCode-ROS/devel/.private/abridge/share/abridge/cmake/abridgeConfig.cmake

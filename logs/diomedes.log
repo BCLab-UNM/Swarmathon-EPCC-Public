@@ -1,0 +1,95 @@
+Welcome to the world of tomorrow diomedes!  Behaviour turnDirectionule started.
+LogicController.Reset()
+
+
+
+
+
+
+
+[33m[ WARN] [1520993548.758512044, 777.192000000]: Shutdown request received.[0m
+[33m[ WARN] [1520993548.758627029, 777.192000000]: Reason given for shutdown: [user request][0m
+Exception in mapAverage() Lookup would require extrapolation into the future.  Requested time 777.099000000 but the latest data is at time 777.000000000, when looking up transform from frame [diomedes/map] to frame [diomedes/odom]
+
+... logging to /home/timeinvestor2/.ros/log/16aecd14-2725-11e8-a59b-18cf5ef835b6/roslaunch-timeinvestor2-Latitude-E6440-21615.log
+Checking log directory for disk usage. This may take awhile.
+Press Ctrl-C to interrupt
+Done checking log file disk usage. Usage is <1GB.
+]2;/home/timeinvestor2/SwarmBaseCode-ROS/launch/swarmie.launch
+[1mstarted roslaunch server http://timeinvestor2-Latitude-E6440:40895/[0m
+
+SUMMARY
+========
+
+PARAMETERS
+ * /diomedes_APRILTAG/image_transport: theora
+ * /diomedes_APRILTAG/sensor_frame_id: diomedes/camera_link
+ * /diomedes_APRILTAG/tag_descriptions: [{'id': 0, 'size'...
+ * /diomedes_APRILTAG/tag_family: 36h11
+ * /diomedes_MAP/frequency: 10
+ * /diomedes_MAP/imu0: /diomedes/imu
+ * /diomedes_MAP/imu0_config: [False, False, Fa...
+ * /diomedes_MAP/initial_estimate_covariance: ['1e-9', 0, 0, 0,...
+ * /diomedes_MAP/odom0: /diomedes/odom/na...
+ * /diomedes_MAP/odom0_config: [True, True, Fals...
+ * /diomedes_MAP/odom1: /diomedes/odom/fi...
+ * /diomedes_MAP/odom1_config: [False, False, Fa...
+ * /diomedes_MAP/process_noise_covariance: [0.005, 0, 0, 0, ...
+ * /diomedes_MAP/two_d_mode: True
+ * /diomedes_MAP/world_frame: map
+ * /diomedes_NAVSAT/frequency: 10
+ * /diomedes_NAVSAT/magnetic_declination_radians: 0.0
+ * /diomedes_NAVSAT/world_frame: map
+ * /diomedes_NAVSAT/yaw_offset: 1.57079632679
+ * /diomedes_ODOM/frequency: 10
+ * /diomedes_ODOM/imu0: /diomedes/imu
+ * /diomedes_ODOM/imu0_config: [False, False, Fa...
+ * /diomedes_ODOM/odom0: /diomedes/odom
+ * /diomedes_ODOM/odom0_config: [False, False, Fa...
+ * /diomedes_ODOM/two_d_mode: True
+ * /diomedes_ODOM/world_frame: odom
+ * /rosdistro: kinetic
+ * /rosversion: 1.12.7
+ * /tf_prefix: diomedes
+
+NODES
+  /
+    diomedes_APRILTAG (apriltags_ros/apriltag_detector_node)
+    diomedes_BASE2CAM (tf/static_transform_publisher)
+    diomedes_BEHAVIOUR (behaviours/behaviours)
+    diomedes_DIAGNOSTICS (diagnostics/diagnostics)
+    diomedes_MAP (robot_localization/ekf_localization_node)
+    diomedes_NAVSAT (robot_localization/navsat_transform_node)
+    diomedes_OBSTACLE (obstacle_detection/obstacle)
+    diomedes_ODOM (robot_localization/ekf_localization_node)
+    diomedes_SBRIDGE (sbridge/sbridge)
+
+[1mROS_MASTER_URI=http://localhost:11311[0m
+]2;/home/timeinvestor2/SwarmBaseCode-ROS/launch/swarmie.launch http://localhost:11311
+core service [/rosout] found
+[1mprocess[diomedes_BASE2CAM-1]: started with pid [21644][0m
+[1mprocess[diomedes_DIAGNOSTICS-2]: started with pid [21645][0m
+[1mprocess[diomedes_SBRIDGE-3]: started with pid [21651][0m
+[1mprocess[diomedes_BEHAVIOUR-4]: started with pid [21664][0m
+[1mprocess[diomedes_NAVSAT-6]: started with pid [21670][0m
+[1mprocess[diomedes_ODOM-7]: started with pid [21690][0m
+[1mprocess[diomedes_MAP-8]: started with pid [21704][0m
+[1mprocess[diomedes_APRILTAG-9]: started with pid [21707][0m
+[1m[diomedes_APRILTAG-9] process has finished cleanly
+log file: /home/timeinvestor2/.ros/log/16aecd14-2725-11e8-a59b-18cf5ef835b6/diomedes_APRILTAG-9*.log[0m
+[1m[diomedes_BASE2CAM-1] process has finished cleanly
+log file: /home/timeinvestor2/.ros/log/16aecd14-2725-11e8-a59b-18cf5ef835b6/diomedes_BASE2CAM-1*.log[0m
+[1m[diomedes_DIAGNOSTICS-2] process has finished cleanly
+log file: /home/timeinvestor2/.ros/log/16aecd14-2725-11e8-a59b-18cf5ef835b6/diomedes_DIAGNOSTICS-2*.log[0m
+[1m[diomedes_MAP-8] process has finished cleanly
+log file: /home/timeinvestor2/.ros/log/16aecd14-2725-11e8-a59b-18cf5ef835b6/diomedes_MAP-8*.log[0m
+[1m[diomedes_SBRIDGE-3] process has finished cleanly
+log file: /home/timeinvestor2/.ros/log/16aecd14-2725-11e8-a59b-18cf5ef835b6/diomedes_SBRIDGE-3*.log[0m
+[1m[diomedes_NAVSAT-6] process has finished cleanly
+log file: /home/timeinvestor2/.ros/log/16aecd14-2725-11e8-a59b-18cf5ef835b6/diomedes_NAVSAT-6*.log[0m
+[1m[diomedes_ODOM-7] process has finished cleanly
+log file: /home/timeinvestor2/.ros/log/16aecd14-2725-11e8-a59b-18cf5ef835b6/diomedes_ODOM-7*.log[0m
+all processes on machine have died, roslaunch will exit
+shutting down processing monitor...
+... shutting down processing monitor complete
+[1mdone[0m

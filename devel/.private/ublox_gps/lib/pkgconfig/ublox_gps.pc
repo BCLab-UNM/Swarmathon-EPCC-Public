@@ -1,0 +1,8 @@
+prefix=/home/timeinvestor2/SwarmBaseCode-ROS/devel/.private/ublox_gps
+
+Name: ublox_gps
+Description: Description of ublox_gps
+Version: 0.0.4
+Cflags: -I/home/timeinvestor2/SwarmBaseCode-ROS/src/ublox/ublox_gps/include
+Libs: -L/home/timeinvestor2/SwarmBaseCode-ROS/devel/.private/ublox_gps/lib -lublox_gps
+Requires: roscpp ublox_msgs ublox_serialization

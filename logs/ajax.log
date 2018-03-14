@@ -1,0 +1,97 @@
+Welcome to the world of tomorrow ajax!  Behaviour turnDirectionule started.
+LogicController.Reset()
+
+
+
+
+
+
+
+
+
+[33m[ WARN] [1520993535.510873701, 777.192000000]: Shutdown request received.[0m
+[33m[ WARN] [1520993535.511019141, 777.192000000]: Reason given for shutdown: [user request][0m
+Exception in mapAverage() Lookup would require extrapolation into the future.  Requested time 777.175000000 but the latest data is at time 777.100000000, when looking up transform from frame [ajax/map] to frame [ajax/odom]
+
+... logging to /home/timeinvestor2/.ros/log/16aecd14-2725-11e8-a59b-18cf5ef835b6/roslaunch-timeinvestor2-Latitude-E6440-20509.log
+Checking log directory for disk usage. This may take awhile.
+Press Ctrl-C to interrupt
+Done checking log file disk usage. Usage is <1GB.
+]2;/home/timeinvestor2/SwarmBaseCode-ROS/launch/swarmie.launch
+[1mstarted roslaunch server http://timeinvestor2-Latitude-E6440:46683/[0m
+
+SUMMARY
+========
+
+PARAMETERS
+ * /ajax_APRILTAG/image_transport: theora
+ * /ajax_APRILTAG/sensor_frame_id: ajax/camera_link
+ * /ajax_APRILTAG/tag_descriptions: [{'id': 0, 'size'...
+ * /ajax_APRILTAG/tag_family: 36h11
+ * /ajax_MAP/frequency: 10
+ * /ajax_MAP/imu0: /ajax/imu
+ * /ajax_MAP/imu0_config: [False, False, Fa...
+ * /ajax_MAP/initial_estimate_covariance: ['1e-9', 0, 0, 0,...
+ * /ajax_MAP/odom0: /ajax/odom/navsat
+ * /ajax_MAP/odom0_config: [True, True, Fals...
+ * /ajax_MAP/odom1: /ajax/odom/filtered
+ * /ajax_MAP/odom1_config: [False, False, Fa...
+ * /ajax_MAP/process_noise_covariance: [0.005, 0, 0, 0, ...
+ * /ajax_MAP/two_d_mode: True
+ * /ajax_MAP/world_frame: map
+ * /ajax_NAVSAT/frequency: 10
+ * /ajax_NAVSAT/magnetic_declination_radians: 0.0
+ * /ajax_NAVSAT/world_frame: map
+ * /ajax_NAVSAT/yaw_offset: 1.57079632679
+ * /ajax_ODOM/frequency: 10
+ * /ajax_ODOM/imu0: /ajax/imu
+ * /ajax_ODOM/imu0_config: [False, False, Fa...
+ * /ajax_ODOM/odom0: /ajax/odom
+ * /ajax_ODOM/odom0_config: [False, False, Fa...
+ * /ajax_ODOM/two_d_mode: True
+ * /ajax_ODOM/world_frame: odom
+ * /rosdistro: kinetic
+ * /rosversion: 1.12.7
+ * /tf_prefix: ajax
+
+NODES
+  /
+    ajax_APRILTAG (apriltags_ros/apriltag_detector_node)
+    ajax_BASE2CAM (tf/static_transform_publisher)
+    ajax_BEHAVIOUR (behaviours/behaviours)
+    ajax_DIAGNOSTICS (diagnostics/diagnostics)
+    ajax_MAP (robot_localization/ekf_localization_node)
+    ajax_NAVSAT (robot_localization/navsat_transform_node)
+    ajax_OBSTACLE (obstacle_detection/obstacle)
+    ajax_ODOM (robot_localization/ekf_localization_node)
+    ajax_SBRIDGE (sbridge/sbridge)
+
+[1mROS_MASTER_URI=http://localhost:11311[0m
+]2;/home/timeinvestor2/SwarmBaseCode-ROS/launch/swarmie.launch http://localhost:11311
+core service [/rosout] found
+[1mprocess[ajax_BASE2CAM-1]: started with pid [20699][0m
+[1mprocess[ajax_DIAGNOSTICS-2]: started with pid [20709][0m
+[1mprocess[ajax_SBRIDGE-3]: started with pid [20718][0m
+[1mprocess[ajax_BEHAVIOUR-4]: started with pid [20719][0m
+[1mprocess[ajax_NAVSAT-6]: started with pid [20726][0m
+[1mprocess[ajax_ODOM-7]: started with pid [20743][0m
+[1mprocess[ajax_MAP-8]: started with pid [20779][0m
+[1mprocess[ajax_APRILTAG-9]: started with pid [20808][0m
+[1m[ajax_APRILTAG-9] process has finished cleanly
+log file: /home/timeinvestor2/.ros/log/16aecd14-2725-11e8-a59b-18cf5ef835b6/ajax_APRILTAG-9*.log[0m
+[1m[ajax_BASE2CAM-1] process has finished cleanly
+log file: /home/timeinvestor2/.ros/log/16aecd14-2725-11e8-a59b-18cf5ef835b6/ajax_BASE2CAM-1*.log[0m
+[1m[ajax_DIAGNOSTICS-2] process has finished cleanly
+log file: /home/timeinvestor2/.ros/log/16aecd14-2725-11e8-a59b-18cf5ef835b6/ajax_DIAGNOSTICS-2*.log[0m
+[1m[ajax_MAP-8] process has finished cleanly
+log file: /home/timeinvestor2/.ros/log/16aecd14-2725-11e8-a59b-18cf5ef835b6/ajax_MAP-8*.log[0m
+[1m[ajax_SBRIDGE-3] process has finished cleanly
+log file: /home/timeinvestor2/.ros/log/16aecd14-2725-11e8-a59b-18cf5ef835b6/ajax_SBRIDGE-3*.log[0m
+[1m[ajax_NAVSAT-6] process has finished cleanly
+log file: /home/timeinvestor2/.ros/log/16aecd14-2725-11e8-a59b-18cf5ef835b6/ajax_NAVSAT-6*.log[0m
+[1m[ajax_ODOM-7] process has finished cleanly
+log file: /home/timeinvestor2/.ros/log/16aecd14-2725-11e8-a59b-18cf5ef835b6/ajax_ODOM-7*.log[0m
+all processes on machine have died, roslaunch will exit
+shutting down processing monitor...
+... shutting down processing monitor complete
+[1mdone[0m

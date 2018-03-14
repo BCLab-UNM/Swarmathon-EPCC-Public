@@ -1,0 +1,8 @@
+prefix=/home/timeinvestor2/SwarmBaseCode-ROS/devel/.private/swarmie_msgs
+
+Name: swarmie_msgs
+Description: Description of swarmie_msgs
+Version: 0.0.1
+Cflags: -I/home/timeinvestor2/SwarmBaseCode-ROS/devel/.private/swarmie_msgs/include
+Libs: -L/home/timeinvestor2/SwarmBaseCode-ROS/devel/.private/swarmie_msgs/lib 
+Requires: message_runtime

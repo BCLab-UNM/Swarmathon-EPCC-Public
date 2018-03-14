@@ -1,0 +1,1 @@
+/home/timeinvestor2/SwarmBaseCode-ROS/devel/.private/swarmie_msgs/share/roseus/ros/swarmie_msgs/manifest.l

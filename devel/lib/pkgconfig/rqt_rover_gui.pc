@@ -1,0 +1,1 @@
+/home/timeinvestor2/SwarmBaseCode-ROS/devel/.private/rqt_rover_gui/lib/pkgconfig/rqt_rover_gui.pc

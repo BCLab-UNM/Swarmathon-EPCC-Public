@@ -1,0 +1,1 @@
+/home/timeinvestor2/SwarmBaseCode-ROS/devel/.private/ublox_serialization/share/ublox_serialization/cmake/ublox_serializationConfig.cmake

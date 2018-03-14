@@ -1,0 +1,5 @@
+sbridge
+/home/timeinvestor2/SwarmBaseCode-ROS/devel/.private/sbridge/share/sbridge/cmake/sbridgeConfig.cmake /home/timeinvestor2/SwarmBaseCode-ROS/devel/share/sbridge/cmake/sbridgeConfig.cmake
+/home/timeinvestor2/SwarmBaseCode-ROS/devel/.private/sbridge/share/sbridge/cmake/sbridgeConfig-version.cmake /home/timeinvestor2/SwarmBaseCode-ROS/devel/share/sbridge/cmake/sbridgeConfig-version.cmake
+/home/timeinvestor2/SwarmBaseCode-ROS/devel/.private/sbridge/lib/pkgconfig/sbridge.pc /home/timeinvestor2/SwarmBaseCode-ROS/devel/lib/pkgconfig/sbridge.pc
+/home/timeinvestor2/SwarmBaseCode-ROS/devel/.private/sbridge/lib/sbridge/sbridge /home/timeinvestor2/SwarmBaseCode-ROS/devel/lib/sbridge/sbridge

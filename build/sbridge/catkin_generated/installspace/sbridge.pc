@@ -1,0 +1,8 @@
+prefix=/home/timeinvestor2/SwarmBaseCode-ROS/install
+
+Name: sbridge
+Description: Description of sbridge
+Version: 0.0.1
+Cflags: 
+Libs: -L/home/timeinvestor2/SwarmBaseCode-ROS/install/lib 
+Requires: geometry_msgs roscpp std_msgs

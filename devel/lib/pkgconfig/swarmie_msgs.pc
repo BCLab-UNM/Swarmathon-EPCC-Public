@@ -1,0 +1,1 @@
+/home/timeinvestor2/SwarmBaseCode-ROS/devel/.private/swarmie_msgs/lib/pkgconfig/swarmie_msgs.pc
