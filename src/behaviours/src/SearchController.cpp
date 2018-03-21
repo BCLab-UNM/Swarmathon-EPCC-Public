@@ -79,7 +79,7 @@ Result SearchController::DoWork() {
       searchLocation.x = currentLocation.x + (1.4*5* cos(searchLocation.theta));  // epcc from 7.5 to 4.5 to prevent bounce on v0.3
       searchLocation.y = currentLocation.y + (1.4*5* sin(searchLocation.theta));  // epcc from 7.5 to 4.5 to prevent bounce on v0.3
       //*/ 
-      //BigArena=0;
+      BigArena=0;
     }
     else
     {
@@ -208,7 +208,7 @@ Result SearchController::DoWork() {
       }
     }  
     
-    if ( (abs(currentLocation.x) < (1.5*BoundaryLimitEpcc) ) || ((abs(currentLocation.y) > (1.5*BoundaryLimitEpcc) ))) {
+    if ( (abs(currentLocation.x) > (1.5*BoundaryLimitEpcc) ) || ((abs(currentLocation.y) > (1.5*BoundaryLimitEpcc) ))) {
       BigArena=2+BigArena;
     }
    
