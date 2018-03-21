@@ -16,6 +16,7 @@ float ImNearCorridor=0;
 float PortalWidth=0;
 float AreaCoefficient=0;
 float LongRangeCoefficient=0;
+int BigArena=0;
 
 
 SearchController::SearchController() {
@@ -78,32 +79,39 @@ Result SearchController::DoWork() {
       searchLocation.x = currentLocation.x + (1.4*5* cos(searchLocation.theta));  // epcc from 7.5 to 4.5 to prevent bounce on v0.3
       searchLocation.y = currentLocation.y + (1.4*5* sin(searchLocation.theta));  // epcc from 7.5 to 4.5 to prevent bounce on v0.3
       //*/ 
+      //BigArena=0;
     }
     else
     {
-    prelimChanceTreshold = rng->uniformReal(0, 1);
+    
 
-    if (prelimChanceTreshold<0.05){
-        // epcc in case we are on final, and not prelim. 
-        //If no rovernames are communicated, treshold could be a function of time and increase to 99% "IF" time>30minutes   
-        BoundaryLimitEpcc=11;
+    if (BigArena>=1){
+      BoundaryLimitEpcc=9.0;
     }
     else{
-      BoundaryLimitEpcc=5.5;
+      prelimChanceTreshold = rng->uniformReal(0, 1);
+      if (prelimChanceTreshold<0.01){
+          // epcc in case we are on final, and not prelim. 
+          //If no rovernames are communicated, treshold could be a function of time and increase to 99% "IF" time>30minutes   
+          BoundaryLimitEpcc=9.0;
+      }
+      else{
+        BoundaryLimitEpcc=5.5;
+      }
     }
 
     //EPCC// v.0.8 Sectorized behavior to divide terrain and prevent oversearching, and most importantly: TO PREVENT ROVER TRAFFIC
-    PortalWidth=0.05;
+    PortalWidth=0.15;
     BarbWireLengthEpcc= BoundaryLimitEpcc-PortalWidth;
-    CorridorWidthEpcc= 0.8;
-    ImNearCorridor= CorridorWidthEpcc+0.07;
-    AreaCoefficient=0.9*BoundaryLimitEpcc;
+    CorridorWidthEpcc= 0.9;
+    ImNearCorridor= CorridorWidthEpcc+0.15;
+    AreaCoefficient=1.1*BoundaryLimitEpcc;
     LongRangeCoefficient=0.7;
 
     
     if ( (0 <= currentLocation.x)  &&  (0 <= currentLocation.y) ){ // Epcc // we are in the first quadrant
-      if ( (currentLocation.x < (1.1*ImNearCorridor)) && (currentLocation.y>(0.9*BarbWireLengthEpcc)) ) {  //EPCC// |<| Top Portal
-        searchLocation.x= -1.0*ImNearCorridor;                            
+      if ( (currentLocation.x < (1.0*ImNearCorridor)) && (currentLocation.y>(1.0*BarbWireLengthEpcc)) ) {  //EPCC// |<| Top Portal
+        searchLocation.x= -2.0*ImNearCorridor;                            
         searchLocation.y=BoundaryLimitEpcc;
       } 
       else { //EPCC// Not apt to move counterclocwise, return to your 1st quadrant
@@ -128,7 +136,7 @@ Result SearchController::DoWork() {
      // if ( (currentLocation.x < (-BarbWireLengthEpcc) ) && (currentLocation.y < ImNearCorridor) ) { 
       if ( (currentLocation.x <=(-BoundaryLimitEpcc+1.0*PortalWidth) ) && ( currentLocation.y<=(-1.0*ImNearCorridor) )  ) {  
         searchLocation.x= -BoundaryLimitEpcc;  //EPCC// |v| Left Portal  ** 0.5 = This is the only quadrant without assigned rover in prelim, so escape from it is discouraged 
-        searchLocation.y= -(ImNearCorridor); // This assures migration accross quadrants with minimized traffic
+        searchLocation.y= -(2*ImNearCorridor); // This assures migration accross quadrants with minimized traffic
       } 
       else { //EPCC// Not apt to move clockwise, return to your 2nd quadrant 
         // v.1.0 With long walks and minimum turns to cover more area in less time and increase chance of finding a distant cluster
@@ -152,9 +160,9 @@ Result SearchController::DoWork() {
     }
 
     else if( (currentLocation.y <= 0) && (currentLocation.x<=0) ){//EPCC// we are in the third quadrant
-      if ( ( currentLocation.x<(-0.9*BarbWireLengthEpcc) ) && ( (-ImNearCorridor*1.1)< currentLocation.y )  ) { //EPCC// |^| Left Portal (the seccond quadrant will need more help)
-        searchLocation.y= ImNearCorridor;                                  
-        searchLocation.x=-BoundaryLimitEpcc;
+      if ( ( currentLocation.y<(-1.0*BarbWireLengthEpcc) ) && ( (-ImNearCorridor*1.0)< currentLocation.x )  ) { //EPCC// |>| Left Portal (the seccond quadrant will need more help)
+        searchLocation.x= 2*ImNearCorridor;                                  
+        searchLocation.y=-BoundaryLimitEpcc;
       }
       else{ //EPCC// Not apt to move clockwise, return to your 3nd quadrant 
         // v.1.0 With long walks and minimum turns to cover more area in less time and increase chance of finding a distant cluster
@@ -177,7 +185,7 @@ Result SearchController::DoWork() {
     }
     else if ( (0<=currentLocation.x)  &&  (currentLocation.y<=0) )  {//EPCC// we are in the fourth quadrant
       if (( BarbWireLengthEpcc < currentLocation.x) && ( (-ImNearCorridor)<currentLocation.y) ) { //EPCC// |^| Right Portal
-        searchLocation.y= ImNearCorridor;                                  
+        searchLocation.y= 2*ImNearCorridor;                                  
         searchLocation.x=BoundaryLimitEpcc;
       }
       else{ //EPCC// Not apt to move clockwise, return to your 3nd quadrant 
@@ -200,6 +208,10 @@ Result SearchController::DoWork() {
       }
     }  
     
+    if ( (abs(currentLocation.x) < (1.5*BoundaryLimitEpcc) ) || ((abs(currentLocation.y) > (1.5*BoundaryLimitEpcc) ))) {
+      BigArena=2+BigArena;
+    }
+   
 
     searchLocation.theta = atan2(abs(searchLocation.y - currentLocation.y), abs(searchLocation.x - currentLocation.x) );
     //epcc Adding and anglular displacement to assure quadrant location
