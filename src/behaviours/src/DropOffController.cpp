@@ -138,7 +138,7 @@ Result DropOffController::DoWork() {
 // EPCC// precision driving may be needed here >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 //        isPrecisionDriving = false;
 
-        if (abs(currentLocation.y)<=0.075){  // epcc AXIS ALIGNMENT TOLERANCE// v.0.6 =0.075 //v.0.9 =0.175//
+        if (abs(currentLocation.y)<=0.175){  // epcc AXIS ALIGNMENT TOLERANCE// v.0.6 =0.075 //v.0.9 =0.175//
           circularCenterSearching=true;
         }
 
@@ -153,7 +153,7 @@ Result DropOffController::DoWork() {
           droppingRoutePoint.theta=0;// epcc // from left
         }
 
-        if (abs(currentLocation.x)<=0.075){ // epcc// v0.6 // AXIS ALIGNMENT TOLERANCE// v.0.6
+        if (abs(currentLocation.x)<=0.175){ // epcc// v0.6 // AXIS ALIGNMENT TOLERANCE// v.0.6
           circularCenterSearching=true;
         }
       }
