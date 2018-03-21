@@ -32,10 +32,14 @@
 
 // To handle shutdown signals so the node quits
 // properly in response to "rosnode kill"
-#include <ros/ros.h>
+#include <ros/ros.h>   // epcc found is included twice
 #include <signal.h>
 
 #include <exception> // For exception handling
+
+#include <stdio.h>
+
+#include <sstream> // epcc as found in tutorial https://youtu.be/8bUkLNEu5Ns?t=278
 
 using namespace std;
 
@@ -91,21 +95,8 @@ geometry_msgs::Pose2D centerLocationMap;	//A GPS point of the center location, u
 geometry_msgs::Pose2D centerLocationOdom;	//The centers location based on ODOM
 geometry_msgs::Pose2D centerLocationMapRef;	//Variable used in TransformMapCenterToOdom, can be moved to make it local instead of global
 
-// EPCC required variables
-int NUMpublishedNameEPCC=0;
-int numberOfRovers = 0;
-bool publish = true;
-bool WeAreInPrelimCompetitionEPCC=true;
-void numHandler(const std_msgs::UInt8::ConstPtr& message);
-ros::Publisher numPublisher;
-ros::Subscriber numSubscriber;
-
-//std_msgs::String msg;
-// EPCC -----
-
-
-
 int currentMode = 0;
+
 const float behaviourLoopTimeStep = 0.1; 	//time between the behaviour loop calls
 const float status_publish_interval = 1;	//time between publishes
 const float heartbeat_publish_interval = 2;	//time between heartbeat publishes
@@ -127,7 +118,6 @@ float drift_tolerance = 0.5; // the perceived difference between ODOM and GPS va
 
 Result result;		//result struct for passing and storing values to drive robot
 
-// epcc un-cancellation     
 std_msgs::String msg;	//used for passing messages to the GUI
 
 
@@ -147,6 +137,9 @@ ros::Publisher heartbeatPublisher;		//publishes ROSAdapters status via its "hear
 // Publishes swarmie_msgs::Waypoint messages on "/<robot>/waypooints"
 // to indicate when waypoints have been reached.
 ros::Publisher waypointFeedbackPublisher;	//publishes a waypoint to travel to if the rover is given a waypoint in manual mode
+
+// EPCC 
+ros::Publisher publishingNodeEPCC_2_pub;
 
 // Subscribers
 ros::Subscriber joySubscriber;			//receives joystick information
@@ -194,9 +187,10 @@ void sonarHandler(const sensor_msgs::Range::ConstPtr& sonarLeft, const sensor_ms
 // Converts the time passed as reported by ROS (which takes Gazebo simulation rate into account) into milliseconds as an integer.
 long int getROSTimeInMilliSecs();
 
+       std_msgs::String msgEPCC;   
+       std::stringstream ssEPCC;
+
 int main(int argc, char **argv) {
-  // EPCC declaration of ss
-  //stringstream ss;
   
   gethostname(host, sizeof (host));
   string hostname(host);
@@ -209,7 +203,24 @@ int main(int argc, char **argv) {
     publishedName = hostname;
     cout << "No Name Selected. Default is: " << publishedName << endl;
   }
-  
+
+  // EPCC publisher ////////////////////////////////////////////////////////////////////////////////////////////
+ /*
+  ros::init(argc, argv, "publishingNodeEPCC");
+  ros::NodeHandle reference_to_EPCC_node;
+  ros::Publisher publishingNodeEPCC_pub = reference_to_EPCC_node.advertise<std_msgs::String>("ZZchatterTopic", 100);
+  //ros::Rate loop_rate(10);
+   //    std_msgs::String msgEPCC;   seems to work globally if declared outside main
+     //  std::stringstream ssEPCC;   seems to work globally if declared outside main
+
+       ssEPCC << publishedName;
+       msgEPCC.data = ssEPCC.str();
+   
+       ROS_INFO("%s", msgEPCC.data.c_str());
+  ros::spinOnce();
+// EPCC publisher ////////////////////////////////////////////////////////////////////////////////////////////
+*/
+
   // NoSignalHandler so we can catch SIGINT ourselves and shutdown the node
   ros::init(argc, argv, (publishedName + "_BEHAVIOUR"), ros::init_options::NoSigintHandler);
   ros::NodeHandle mNH;
@@ -228,6 +239,14 @@ int main(int argc, char **argv) {
   message_filters::Subscriber<sensor_msgs::Range> sonarLeftSubscriber(mNH, (publishedName + "/sonarLeft"), 10);
   message_filters::Subscriber<sensor_msgs::Range> sonarCenterSubscriber(mNH, (publishedName + "/sonarCenter"), 10);
   message_filters::Subscriber<sensor_msgs::Range> sonarRightSubscriber(mNH, (publishedName + "/sonarRight"), 10);
+
+
+
+// 2dn method EPCC publisher ////////////////////////////////////////////////////////////////////////////////////////////
+  publishingNodeEPCC_2_pub = mNH.advertise<std_msgs::String>(("ZZchatterTopic_2"), 1, true);     //publishes ZZchatterTopic_2
+//  publishingNodeEPCC_2_pub = mNH.advertise<std_msgs::String>("ZZchatterTopic_2");     //publishes ZZchatterTopic_2
+// 2dn method EPCC publisher ////////////////////////////////////////////////////////////////////////////////////////////
+
 
   //publishers
   status_publisher = mNH.advertise<std_msgs::String>((publishedName + "/status"), 1, true);				//publishes rover status
@@ -264,7 +283,6 @@ int main(int argc, char **argv) {
   {
     // ensure the logic controller starts in the correct mode.
     logicController.SetModeManual();
-    // EPCC // it seems init at the begining of the code will go here
   }
 
   timerStartTime = time(0);
@@ -290,37 +308,6 @@ void behaviourStateMachine(const ros::TimerEvent&)
   // init code goes here. (code that runs only once at start of
   // auto mode but wont work in main goes here)
   if (!initilized)
-   
-
-    //EPCC/CKT testing to verify that all rovers are aware of how many rovers are active
-    
-    //  ss << publishedName + " rovers registered : " << numberOfRovers;
-    msg.data = numberOfRovers;
-    infoLogPublisher.publish(msg);
-
-    //epcc ... NUMpublishedName is used to pass the individual behavior to extrenal controllers
-    if (publishedName=="achilles"){
-      NUMpublishedNameEPCC=1;
-    }
-    else if (publishedName=="aeneas"){
-      NUMpublishedNameEPCC=2;
-    }
-    else if (publishedName=="ajax"){
-      NUMpublishedNameEPCC=3;
-    }
-  
-    else if (publishedName=="hector"){
-      NUMpublishedNameEPCC=4;
-    }
-    else if (publishedName=="paris"){
-      NUMpublishedNameEPCC=5;
-    }
-    else if (publishedName=="diomedes"){
-      NUMpublishedNameEPCC=6;
-    }
-
-
-    //
   {
 
     if (timerTimeElapsed > startDelayInSeconds)
@@ -468,6 +455,8 @@ void behaviourStateMachine(const ros::TimerEvent&)
     sprintf(prev_state_machine, "%s", stateMachineMsg.data.c_str());
   }
 }
+//////////////////////////////////////////////////////////////////////// EPCC END OF STATE MACHINE 
+
 
 void sendDriveCommand(double left, double right)
 {
@@ -482,14 +471,19 @@ void sendDriveCommand(double left, double right)
  * ROS CALLBACK HANDLERS *
  *************************/
 
-//EPCC/CKT used for counting the number of active rovers
-//every time a rover publishes to this topic the number of rovers is incremented;
-void numHandler(const std_msgs::UInt8::ConstPtr& message){
-    numberOfRovers++;
-    if(numberOfRovers > 3)
-        WeAreInPrelimCompetitionEPCC = false;
-    //publish = true;
+//
+//publishingNodeEPCC_2_pub = mNH.advertise<std_msgs::String>(("ZZchatterTopic_2"), 1, true);     //publishes ZZchatterTopic_2
+//
+//status_publisher = mNH.advertise<std_msgs::String>((publishedName + "/status"), 1, true);        //publishes rover status
+
+void handler2(const ros::TimerEvent&) {
+  std_msgs::String msg;
+  msg.data = publishedName;    //change this with team name
+  //msgEPCC.data.c_str()
+  publishingNodeEPCC_2_pub.publish(msg);
+  //status_publisher.publish(msg);
 }
+///*/
 
 void targetHandler(const apriltags_ros::AprilTagDetectionArray::ConstPtr& message) {
 
@@ -570,7 +564,7 @@ void odometryHandler(const nav_msgs::Odometry::ConstPtr& message) {
 }
 
 // Allows a virtual fence to be defined and enabled or disabled through ROS
-void virtualFenceHandler(const std_msgs::Float32MultiArray& message) 
+void virtualFenceHandler(const std_msgs::Float32MultiArray& message)
 {
   // Read data from the message array
   // The first element is an integer indicating the shape type
@@ -666,11 +660,12 @@ void joyCmdHandler(const sensor_msgs::Joy::ConstPtr& message) {
   }
 }
 
-
 void publishStatusTimerEventHandler(const ros::TimerEvent&) {
   std_msgs::String msg;
-  msg.data = "Team EL PASO";		//change this with team name
+  msg.data = "Team: El Pasoan 2018";		//change this with team name
+  //msgEPCC.data.c_str();
   status_publisher.publish(msg);
+  //status_publisher.publish(msgEPCC);
 }
 
 void manualWaypointHandler(const swarmie_msgs::Waypoint& message) {

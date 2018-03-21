@@ -108,7 +108,7 @@ bool PickUpController::SetSonarData(float rangeCenter)
 {
   // If the center ultrasound sensor is blocked by a very close
   // object, then a cube has been successfully lifted.
-  if (rangeCenter < 0.12 && targetFound)
+  if (rangeCenter < 0.12 && targetFound) // EPCC // v.0.6 from  <0.12 to<0.14 if rover is held to close to the wrist articulation
   {
     result.type = behavior;
     result.b = nextProcess;
@@ -244,7 +244,7 @@ Result PickUpController::DoWork()
     float raise_time_begin = 2.0;
     float lower_gripper_time_begin = 4.0;
     float target_reaquire_begin= 4.2;
-    float target_pickup_task_time_limit = 4.8;
+    float target_pickup_task_time_limit = 3*4.8; //EPCC we doubled the time// v.1.2 (x3)
 
     //cout << "blockDistance DOWORK:  " << blockDistance << endl;
 
@@ -284,7 +284,7 @@ Result PickUpController::DoWork()
       else if (Td > 1.0 && Td < target_pickup_task_time_limit)
       {
         // The rover will reverse straight backwards without turning.
-        result.pd.cmdVel = -0.15;
+        result.pd.cmdVel = -0.15; // EPCC// = -0.15;
         result.pd.cmdAngularError= 0.0;
       }
     }
@@ -295,8 +295,8 @@ Result PickUpController::DoWork()
       if (vel < 0.1) vel = 0.1;
       if (vel > 0.2) vel = 0.2;
 
-      result.pd.cmdVel = vel;
-      result.pd.cmdAngularError = -blockYawError;
+      result.pd.cmdVel = vel*(0.5); //EPCC// x0.5
+      result.pd.cmdAngularError = (-blockYawError)*(0.1);  // EPCC// v.1.2 (x0.5);
       timeOut = false;
 
       return result;
@@ -304,7 +304,7 @@ Result PickUpController::DoWork()
     else if (!lockTarget) //if a target hasn't been locked lock it and enter a counting state while slowly driving forward.
     {
       lockTarget = true;
-      result.pd.cmdVel = 0.18;
+      result.pd.cmdVel = 0.28; //EPCC// looking to almost run over the cube// original=0.18 to 0.38
       result.pd.cmdAngularError= 0.0;
       timeOut = true;
       ignoreCenterSonar = true;

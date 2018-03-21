@@ -178,7 +178,7 @@ Result DriveController::DoWork()
 
 
     // goal not yet reached drive while maintaining proper heading.
-    if (fabs(errorYaw) < M_PI_2 &&  distance > waypointTolerance)
+    if (fabs(errorYaw) < (M_PI_2/4) &&  distance > waypointTolerance)// EPCC reducen the tolerance to increase orthogonal paths
     {
       // drive and turn simultaniously
       result.pd.setPointVel = searchVelocity;

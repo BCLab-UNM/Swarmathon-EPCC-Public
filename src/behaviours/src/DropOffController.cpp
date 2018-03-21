@@ -1,5 +1,6 @@
 // This file deals with the rover's ability to drop off cubes to the center collection disk
 // There are only two forms of driving: precision driving and waypoints
+
 // Precision Driving == any controller (drive, pickup, dropoff, obstacle)
 // continously feeding data into the feedback loop needed for drive controls
 // has more precise control over rover's movements, more accurate of less than 1cm
@@ -8,6 +9,19 @@
 // with an accuracy of at least 15cm
 
 #include "DropOffController.h"
+
+//#include <std_msgs/Float32.h> //  EPCC// added
+#include <std_msgs/String.h>
+#include <angles/angles.h>
+#include <random_numbers/random_numbers.h>
+
+
+//ros::Publisher publishingNodeEPCC_3_pub;
+//publishingNodeEPCC_3_pub = mNH.advertise<std_msgs::String>(("ZZchatterTopic_3"), 1, true); 
+
+float quasi_smarth=0; // treshold for random change of dropping routes in case there is an obstacle
+
+
 
 // Constructor to set initial values
 DropOffController::DropOffController() {
@@ -56,7 +70,7 @@ Result DropOffController::DoWork() {
   }
 
   //if we are in the routine for exiting the circle once we have dropped a block off and reseting all our flags
-  //to resart our search.
+  //to restart our search.
   if(reachedCollectionPoint)
   {
     //cout << "2" << endl; //Debugging statement
@@ -82,9 +96,10 @@ Result DropOffController::DoWork() {
 
       result.fingerAngle = M_PI_2; //open fingers
       result.wristAngle = 0; //raise wrist
-
-      result.pd.cmdVel = -0.3;
-      result.pd.cmdAngularError = 0.0;
+          // EPCC // Here it needs some timer to alow the cube to drop with fwd velocity.
+      result.pd.cmdVel = -0.3; // = -0.3;
+      //EPCC// here is where we need to introduce an algorithm to reverse at angle (it may cause more harm than good)
+      result.pd.cmdAngularError = -0.1; //EPCC reverse at an angle to prevent trafic //v.0.8//  original= 0.0; 
     }
 
     return result;
@@ -94,24 +109,109 @@ Result DropOffController::DoWork() {
   double distanceToCenter = hypot(this->centerLocation.x - this->currentLocation.x, this->centerLocation.y - this->currentLocation.y);
 
   //check to see if we are driving to the center location or if we need to drive in a circle and look.
+
+  
+  //circularCenterSearching=false; // EPCC v.0.5 =false// EPCC v.0.6 =true inside alignment ifs below... because it may help to allow it to change as long as search is in increments of 90 degrees.
+
   if (distanceToCenter > collectionPointVisualDistance && !circularCenterSearching && (count == 0)) {
+
     // Sets driving mode to waypoint
     result.type = waypoint;
     // Clears all the waypoints in the vector
     result.wpts.waypoints.clear();
+       
+    // epcc v.0.6 // dropping bay deprecated and initial alignment with secondary original route is implemented
+    Point droppingRoutePoint;
+
+    if(distanceToCenter>=2){
+
+      if (abs(currentLocation.x) >= abs (currentLocation.y)){  
+        droppingRoutePoint.x = currentLocation.x;// epcc // Initial phase vertical approach
+        droppingRoutePoint.y = 0;
+        if (currentLocation.y>0){
+          droppingRoutePoint.theta=1.5*M_PI; // epcc // vertical, then from top
+        }
+        else{
+          droppingRoutePoint.theta=0.5*M_PI; // epcc // vertical, from bottom
+        }
+
+// EPCC// precision driving may be needed here >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+//        isPrecisionDriving = false;
+
+        if (abs(currentLocation.y)<=0.175){  // epcc AXIS ALIGNMENT TOLERANCE// v.0.6 =0.075 //v.0.9 =0.175//
+          circularCenterSearching=true;
+        }
+
+      }
+      else{  
+        droppingRoutePoint.y = currentLocation.y;// epcc // Initial phase horizontal approach
+        droppingRoutePoint.x = 0;
+        if (currentLocation.x>0){
+          droppingRoutePoint.theta=M_PI;// epcc // Initial from right        
+        }
+        else{
+          droppingRoutePoint.theta=0;// epcc // from left
+        }
+
+        if (abs(currentLocation.x)<=0.075){ // epcc// v0.6 // AXIS ALIGNMENT TOLERANCE// v.0.6
+          circularCenterSearching=true;
+        }
+      }
+    }  
+    else{ // distance to center <3 // EPCC ASSURING ORTOGONAL LANDIND AND PREVENT ENDLESS CYCLE
+
+      //random can be used here to change bay and introduce some quasi-intelligent behaviour
+//      quasi_smarth = mod(currentLocation.theta);       
+      if (abs(currentLocation.x)>abs(currentLocation.y)){
+     // if (quasi_smarth>1){
+        droppingRoutePoint.x=3.5*(currentLocation.x/abs(currentLocation.x));
+      }
+      else{        
+        droppingRoutePoint.y=3.5*(currentLocation.y/abs(currentLocation.y));
+      }
+  
+      droppingRoutePoint.theta = atan2(abs(droppingRoutePoint.y - currentLocation.y), abs(droppingRoutePoint.x - currentLocation.x) );
+
+      //epcc Adding and anglular displacement to assure quadrant location
+      if ((droppingRoutePoint.x < currentLocation.x) && (droppingRoutePoint.y > currentLocation.y)) {
+        //epcc  new theta is in second quadrant
+        droppingRoutePoint.theta = M_PI -droppingRoutePoint.theta;
+      }else if  ((droppingRoutePoint.x > currentLocation.x) && (droppingRoutePoint.y < currentLocation.y)) {
+        //epcc  new theta is in fourth quadrant
+        droppingRoutePoint.theta = -droppingRoutePoint.theta;
+      }else if  ((droppingRoutePoint.x < currentLocation.x) && (droppingRoutePoint.y < currentLocation.y)) {
+        //epcc  new theta is in third quadrant
+        droppingRoutePoint.theta = M_PI +droppingRoutePoint.theta;
+      }
+    }
+  
+
+
+  // epcc cancelled and replaced  
     // Adds the current location's point into the waypoint vector
-    result.wpts.waypoints.push_back(this->centerLocation);
+    //result.wpts.waypoints.push_back(this->centerLocation);
+  
+    result.wpts.waypoints.push_back(droppingRoutePoint);
+
+
+
+  // epcc// candidate to be cancelled //
     // Do not start following waypoints
-    startWaypoint = false;
+
+    // epcc cancelled // 
+    //startWaypoint = false; // original =false
+    startWaypoint = true;
+    
     // Disable precision driving
     isPrecisionDriving = false;
+
     // Reset elapsed time
     timerTimeElapsed = 0;
 
     return result;
 
   }
-  else if (timerTimeElapsed >= 2)//spin search for center
+  else if (timerTimeElapsed >= 2)//spin search for center   //>>>>>>>>>>>EPCC>>>>>>>>>>>>> candidate to reduce time
   {
     Point nextSpinPoint;
 
@@ -137,6 +237,8 @@ Result DropOffController::DoWork() {
 
     returnTimer = current_time;
     timerTimeElapsed = 0;
+
+    // EPCC// ++++++++++++++++++++ probably we need a in if timerTimeElapsed> 10 then interrupt  ????????????? scanned up to here
 
   }
 
@@ -415,3 +517,12 @@ void DropOffController::SetCurrentTimeInMilliSecs( long int time )
 {
   current_time = time;
 }
+/*
+void handler3(const ros::TimerEvent&) {
+  std_msgs::String msg;
+  msg.data = publishedName;    //change this with team name
+  //msgEPCC.data.c_str()
+  publishingNodeEPCC_2_pub.publish(msg);
+  //status_publisher.publish(msg);
+}
+*/
