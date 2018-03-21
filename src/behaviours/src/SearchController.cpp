@@ -208,9 +208,9 @@ Result SearchController::DoWork() {
       }
     }  
     
-    if ( (abs(currentLocation.x) > (1.5*BoundaryLimitEpcc) ) || ((abs(currentLocation.y) > (1.5*BoundaryLimitEpcc) ))) {
-      BigArena=2+BigArena;
-    }
+    //if ( (abs(currentLocation.x) > (1.5*BoundaryLimitEpcc) ) || ((abs(currentLocation.y) > (1.5*BoundaryLimitEpcc) ))) {
+    //  BigArena=2+BigArena;
+    //}
    
 
     searchLocation.theta = atan2(abs(searchLocation.y - currentLocation.y), abs(searchLocation.x - currentLocation.x) );
