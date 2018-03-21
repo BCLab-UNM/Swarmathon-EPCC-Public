@@ -19,7 +19,7 @@
 //ros::Publisher publishingNodeEPCC_3_pub;
 //publishingNodeEPCC_3_pub = mNH.advertise<std_msgs::String>(("ZZchatterTopic_3"), 1, true); 
 
-float quasi_smarth=0; // treshold for random change of dropping routes in case there is an obstacle
+int quasi_smarth=1; // treshold for random change of dropping routes in case there is an obstacle
 
 
 
@@ -97,9 +97,9 @@ Result DropOffController::DoWork() {
       result.fingerAngle = M_PI_2; //open fingers
       result.wristAngle = 0; //raise wrist
           // EPCC // Here it needs some timer to alow the cube to drop with fwd velocity.
-      result.pd.cmdVel = -0.3; // = -0.3;
+      result.pd.cmdVel = -0.2; // = -0.3;
       //EPCC// here is where we need to introduce an algorithm to reverse at angle (it may cause more harm than good)
-      result.pd.cmdAngularError = -0.1; //EPCC reverse at an angle to prevent trafic //v.0.8//  original= 0.0; 
+      result.pd.cmdAngularError = -0.0; //EPCC reverse at an angle to prevent trafic //v.0.8//  original= 0.0; 
     }
 
     return result;
@@ -123,7 +123,7 @@ Result DropOffController::DoWork() {
     // epcc v.0.6 // dropping bay deprecated and initial alignment with secondary original route is implemented
     Point droppingRoutePoint;
 
-    if(distanceToCenter>=2){
+    if(distanceToCenter>=4.5){
 
       if (abs(currentLocation.x) >= abs (currentLocation.y)){  
         droppingRoutePoint.x = currentLocation.x;// epcc // Initial phase vertical approach
@@ -138,23 +138,47 @@ Result DropOffController::DoWork() {
 // EPCC// precision driving may be needed here >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 //        isPrecisionDriving = false;
 
-        if (abs(currentLocation.y)<=0.175){  // epcc AXIS ALIGNMENT TOLERANCE// v.0.6 =0.075 //v.0.9 =0.175//
+        if ((abs(currentLocation.y)<=1.7) || (quasi_smarth>3) ){  // epcc AXIS ALIGNMENT TOLERANCE// v.0.6 =0.075 //v.0.9 =0.175//
           circularCenterSearching=true;
+          quasi_smarth=1;    
+        }
+        else{
+          circularCenterSearching=false;            
+          if (currentLocation.y<=0){
+            droppingRoutePoint.y= 1.5/quasi_smarth;               
+          }
+          else{
+            droppingRoutePoint.y= -1.5/quasi_smarth;
+          }
+          
+          quasi_smarth=quasi_smarth+1;   
         }
 
       }
-      else{  
+      else{
+
         droppingRoutePoint.y = currentLocation.y;// epcc // Initial phase horizontal approach
         droppingRoutePoint.x = 0;
         if (currentLocation.x>0){
-          droppingRoutePoint.theta=M_PI;// epcc // Initial from right        
+          droppingRoutePoint.theta=M_PI;// epcc // Initial from right    
         }
         else{
           droppingRoutePoint.theta=0;// epcc // from left
         }
 
-        if (abs(currentLocation.x)<=0.175){ // epcc// v0.6 // AXIS ALIGNMENT TOLERANCE// v.0.6
+        if ( (abs(currentLocation.x)<=1.7) || (quasi_smarth>3) ) { // epcc// v0.6 // AXIS ALIGNMENT TOLERANCE// v.0.6
           circularCenterSearching=true;
+          quasi_smarth=1;              
+        }
+        else{
+          circularCenterSearching=false;            
+          if (currentLocation.x<=0){
+            droppingRoutePoint.x= 1.5/quasi_smarth;               
+          }
+          else{
+            droppingRoutePoint.x= -1.5/quasi_smarth;  
+          }
+          quasi_smarth=quasi_smarth+1;
         }
       }
     }  
