@@ -73,7 +73,7 @@ Result SearchController::DoWork() {
       
       // epcc teporary cancellation TO TEST pick up at corners // 
       //*   
-      searchLocation.theta = currentLocation.theta + M_PI - 0.65*M_PI;
+      searchLocation.theta = currentLocation.theta + M_PI + 0.25*M_PI;
       searchLocation.x = currentLocation.x + (1.4*5* cos(searchLocation.theta));  // epcc from 7.5 to 4.5 to prevent bounce on v0.3
       searchLocation.y = currentLocation.y + (1.4*5* sin(searchLocation.theta));  // epcc from 7.5 to 4.5 to prevent bounce on v0.3
       //*/ 
@@ -82,7 +82,7 @@ Result SearchController::DoWork() {
     {
     prelimChanceTreshold = rng->uniformReal(0, 1);
 
-    if (prelimChanceTreshold<0.001){
+    if (prelimChanceTreshold<0.05){
         // epcc in case we are on final, and not prelim. 
         //If no rovernames are communicated, treshold could be a function of time and increase to 99% "IF" time>30minutes   
         BoundaryLimitEpcc=12;
@@ -95,8 +95,8 @@ Result SearchController::DoWork() {
     PortalWidth=0.05;
     BarbWireLengthEpcc= BoundaryLimitEpcc-PortalWidth;
     CorridorWidthEpcc= 0.8;
-    ImNearCorridor= CorridorWidthEpcc+0.05;
-    AreaCoefficient=0.7*BarbWireLengthEpcc;
+    ImNearCorridor= CorridorWidthEpcc+0.1;
+    AreaCoefficient=0.8*BarbWireLengthEpcc;
     
     
     if ( (0 <= currentLocation.x)  &&  (0 <= currentLocation.y) ){ // Epcc // we are in the first quadrant
@@ -110,7 +110,7 @@ Result SearchController::DoWork() {
           searchLocation.x= BoundaryLimitEpcc;//
         }
         else{// v.1.0 With long walks and minimum turns to cover more area in less time and increase chance of finding a distant cluster
-          searchLocation.x = CorridorWidthEpcc + AreaCoefficient*(searchLocation.x)/(BoundaryLimitEpcc); 
+          searchLocation.x = CorridorWidthEpcc + AreaCoefficient*abs(searchLocation.x)/(BoundaryLimitEpcc); 
         }
 
         searchLocation.y = rng->uniformReal(CorridorWidthEpcc,BoundaryLimitEpcc);        
@@ -118,7 +118,7 @@ Result SearchController::DoWork() {
           searchLocation.y= BoundaryLimitEpcc; //
         }
         else{
-          searchLocation.y = CorridorWidthEpcc + AreaCoefficient*(searchLocation.y)/(BoundaryLimitEpcc); 
+          searchLocation.y = CorridorWidthEpcc + AreaCoefficient*abs(searchLocation.y)/(BoundaryLimitEpcc); 
         }
       }
     }
@@ -135,7 +135,7 @@ Result SearchController::DoWork() {
           searchLocation.x= -BoundaryLimitEpcc; // 
         }
         else{ // v.1.0 With long walks and minimum turns to cover more area in less time and increase chance of finding a distant cluster
-          searchLocation.x = -(CorridorWidthEpcc + AreaCoefficient*(searchLocation.x)/(BoundaryLimitEpcc)  );
+          searchLocation.x = -(CorridorWidthEpcc + AreaCoefficient*abs(searchLocation.x)/(BoundaryLimitEpcc)  );
 
         }
 
@@ -144,7 +144,7 @@ Result SearchController::DoWork() {
           searchLocation.y= BoundaryLimitEpcc; //
         }
         else{
-          searchLocation.y = CorridorWidthEpcc + AreaCoefficient*(searchLocation.y)/(BoundaryLimitEpcc)  ;
+          searchLocation.y = CorridorWidthEpcc + AreaCoefficient*abs(searchLocation.y)/(BoundaryLimitEpcc)  ;
         }
       }
     }
@@ -161,7 +161,7 @@ Result SearchController::DoWork() {
           searchLocation.x= -BoundaryLimitEpcc; // 
         }
         else{ // v.1.0 With long walks and minimum turns to cover more area in less time and increase chance of finding a distant cluster
-          searchLocation.x = -(CorridorWidthEpcc + AreaCoefficient*(searchLocation.x)/(BoundaryLimitEpcc) );
+          searchLocation.x = -(CorridorWidthEpcc + AreaCoefficient*abs(searchLocation.x)/(BoundaryLimitEpcc) );
         }
 
         searchLocation.y = rng->uniformReal(-BoundaryLimitEpcc,-CorridorWidthEpcc);
@@ -169,7 +169,7 @@ Result SearchController::DoWork() {
           searchLocation.y= -BoundaryLimitEpcc; //
         }
         else{
-          searchLocation.y = -(CorridorWidthEpcc + AreaCoefficient*(searchLocation.y)/(BoundaryLimitEpcc) );
+          searchLocation.y = -(CorridorWidthEpcc + AreaCoefficient*abs(searchLocation.y)/(BoundaryLimitEpcc) );
         }        
       }
     }
@@ -178,9 +178,23 @@ Result SearchController::DoWork() {
         searchLocation.y= ImNearCorridor;                                  
         searchLocation.x=BoundaryLimitEpcc;
       }
-      else{//EPCC// Not apt to move counterclocwise, return to your 4th quadrant
-        searchLocation.x = rng->uniformReal(CorridorWidthEpcc, BoundaryLimitEpcc); 
-        searchLocation.y = rng->uniformReal( -BoundaryLimitEpcc,-CorridorWidthEpcc); 
+      else{ //EPCC// Not apt to move clockwise, return to your 3nd quadrant 
+        // v.1.0 With long walks and minimum turns to cover more area in less time and increase chance of finding a distant cluster
+        searchLocation.x = rng->uniformReal(CorridorWidthEpcc,BoundaryLimitEpcc);        
+        if (searchLocation.x>=(0.8*BoundaryLimitEpcc)) {
+          searchLocation.x= BoundaryLimitEpcc; // 
+        }
+        else{ // v.1.0 With long walks and minimum turns to cover more area in less time and increase chance of finding a distant cluster
+          searchLocation.x = (CorridorWidthEpcc + AreaCoefficient*abs(searchLocation.x)/(BoundaryLimitEpcc) );
+        }
+
+        searchLocation.y = rng->uniformReal(-BoundaryLimitEpcc,-CorridorWidthEpcc);
+        if (searchLocation.y<=(-0.8*BoundaryLimitEpcc)) {
+          searchLocation.y= -BoundaryLimitEpcc; //
+        }
+        else{
+          searchLocation.y = -(CorridorWidthEpcc + AreaCoefficient*abs(searchLocation.y)/(BoundaryLimitEpcc) );
+        }        
       }
     }  
     
